@@ -1,0 +1,990 @@
+import React, { useState, useEffect } from 'react';
+
+// --- A simple message box component to replace the Firebase-tied one ---
+const MessageBox = ({ message, type, onClose }) => {
+  if (!message) return null;
+
+  const typeStyles = {
+    error: 'bg-red-100 border-red-400 text-red-700',
+    success: 'bg-green-100 border-green-400 text-green-700',
+    info: 'bg-blue-100 border-blue-400 text-blue-700',
+  };
+
+  const selectedStyle = typeStyles[type] || typeStyles.info;
+
+  return (
+    <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg ${selectedStyle} border z-50 transition-opacity duration-300`}>
+      <div className="flex justify-between items-center">
+        <span>{message}</span>
+        <button onClick={onClose} className="ml-4 text-lg font-bold">&times;</button>
+      </div>
+    </div>
+  );
+};
+
+
+const App = () => {
+    // --- State for local template management ---
+    const [templates, setTemplates] = useState([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState('');
+    const [currentTemplateName, setCurrentTemplateName] = useState('');
+
+    // --- Image Analysis State ---
+    const [imageBase64, setImageBase64] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+
+    // --- Form State ---
+    const initialCharacterState = { 
+        id: 1, name: '', gender: '', age: '', skinColor: '', nationality: '', style: '', 
+        characteristics: '', clothing: '', clothingColor: '', mainAction: '', emotion: '',
+        faceShape: '', lipShape: '', eyeShape: '', eyebrowShape: '', noseShape: '', hairstyle: ''
+    };
+    const [characters, setCharacters] = useState([initialCharacterState]);
+    const [mainDescription, setMainDescription] = useState('');
+    const [location, setLocation] = useState('');
+    const [time, setTime] = useState('');
+    const [weather, setWeather] = useState('');
+    const [season, setSeason] = useState('');
+    const [cameraStyle, setCameraStyle] = useState('');
+    const [cameraMovement, setCameraMovement] = useState('');
+    const [cameraAngle, setCameraAngle] = useState('');
+    const [focus, setFocus] = useState('');
+    const [lighting, setLighting] = useState('');
+    const [colorGrading, setColorGrading] = useState('');
+    const [dialogueType, setDialogueType] = useState('');
+    const [dialogueEntries, setDialogueEntries] = useState([]);
+    const [soundMood, setSoundMood] = useState('');
+    const [environmentalSound, setEnvironmentalSound] = useState('');
+    const [backgroundMusic, setBackgroundMusic] = useState('');
+    const [videoQuality, setVideoQuality] = useState('');
+    const [additionalDetails, setAdditionalDetails] = useState('');
+
+    // --- Prompt Generation State ---
+    const [characterPrompt, setCharacterPrompt] = useState('');
+    const [englishPrompt, setEnglishPrompt] = useState('');
+    const [openAIPrompt, setOpenAIPrompt] = useState('');
+    const [indonesianPrompt, setIndonesianPrompt] = useState('');
+    const [suggestions, setSuggestions] = useState('');
+    const [loading, setLoading] = useState(false);
+    
+    // --- UI Message State ---
+    const [message, setMessage] = useState('');
+    const [messageType, setMessageType] = useState('info');
+    
+    // --- Dropdown Options ---
+    const genderOptions = ['Laki-laki', 'Perempuan'];
+    const styleOptions = ['Ultra Realistis', 'Anime', 'Kartun', '3D', 'Anime 3D', 'Lukisan Cat Minyak', 'Pixel Art'];
+    const timeOptions = ['Pagi', 'Siang', 'Sore', 'Malam', 'Fajar', 'Senja'];
+    const weatherOptions = ['Cerah', 'Berawan', 'Hujan', 'Salju', 'Badai', 'Berkabut'];
+    const seasonOptions = ['Musim Semi', 'Musim Panas', 'Musim Gugur', 'Musim Dingin'];
+    const cameraStyleOptions = ['Realistis', 'Animasi', 'Dokumenter', 'Sinematik', 'Abstrak', 'Gaya Video Musik'];
+    const cameraMovementOptions = ['Statis', 'Pan', 'Tilt', 'Zoom In/Out', 'Dolly', 'Crane', 'Handheld', 'Gimbal'];
+    const cameraAngleOptions = [
+        { value: "Eye-level", label: "Eye-level (Setinggi mata)" },
+        { value: "Low-angle", label: "Low-angle (Sudut rendah)" },
+        { value: "High-angle", label: "High-angle (Sudut tinggi)" },
+        { value: "Bird's-eye", label: "Bird's-eye (Sudut pandang burung)" },
+        { value: "Worm's-eye", label: "Worm's-eye (Sudut pandang cacing)" },
+        { value: "Dutch-angle", label: "Dutch-angle (Sudut miring)" },
+        { value: "Point of view", label: "Point of view (Sudut pandang orang pertama)" }
+    ];
+    const focusOptions = ['Lebar', 'Medium', 'Telefoto', 'Makro Detail'];
+    const lightingOptions = ['Alami', 'Studio', 'Low-key', 'High-key', 'Cahaya Kontra', 'Siluet', 'Neon'];
+    const colorGradingOptions = ['Hangat', 'Dingin', 'Monokrom', 'Vibran', 'Pastel', 'Gelap'];
+    const dialogueTypeOptions = ['Tanpa dialog', 'Informatif', 'Dialog natural', 'Monolog', 'Interview'];
+    const soundMoodOptions = ['Happy', 'Sad', 'Cheerful', 'Angry', 'Mysterious', 'Calm', 'Tense'];
+    const spokenLanguageOptions = ['Bahasa Indonesia', 'English', 'Mandarin', 'Hindi', 'Spanish', 'French', 'German', 'Japanese', 'Korean', 'Arabic', 'Russian'];
+
+
+    // --- UI Helper Functions ---
+    const showMessage = (msg, type = 'info') => {
+        setMessage(msg);
+        setMessageType(type);
+        setTimeout(() => setMessage(''), 5000);
+    };
+
+    const clearForm = () => {
+        setMainDescription('');
+        setCharacters([initialCharacterState]);
+        setLocation('');
+        setTime('');
+        setWeather('');
+        setSeason('');
+        setCameraStyle('');
+        setCameraMovement('');
+        setCameraAngle('');
+        setFocus('');
+        setLighting('');
+        setColorGrading('');
+        setDialogueType('');
+        setDialogueEntries([]);
+        setSoundMood('');
+        setEnvironmentalSound('');
+        setBackgroundMusic('');
+        setVideoQuality('');
+        setAdditionalDetails('');
+        setCurrentTemplateName('');
+        setSelectedTemplateId('');
+        setCharacterPrompt('');
+        setEnglishPrompt('');
+        setOpenAIPrompt('');
+        setIndonesianPrompt('');
+        setSuggestions('');
+        setImageBase64(null);
+        setImagePreview(null);
+    };
+    
+    // --- Image Analysis Functions ---
+    const handleImageSelect = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setImagePreview(URL.createObjectURL(file));
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result.split(',')[1];
+                setImageBase64(base64String);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    
+    const handleImageAnalysis = async () => {
+        if (!imageBase64) {
+            showMessage("Silakan pilih gambar terlebih dahulu.", "error");
+            return;
+        }
+        setIsAnalyzingImage(true);
+        showMessage("Menganalisis gambar... Ini mungkin memakan waktu beberapa saat.", "info");
+
+        const prompt = `Analyze this image in extreme detail for a video generation prompt. Your response MUST be a single valid JSON object and nothing else. Do not wrap it in markdown backticks like \`\`\`json. The JSON object should have the following keys: "mainDescription", "characters", "location", "time", "weather", "season", "cameraStyle", "cameraAngle", "focus", "lighting", "colorGrading".
+        - mainDescription: (string) A detailed overall description of the scene.
+        - characters: (array of objects) An array of all people visible. For each person, provide: gender (string), age (string, e.g., "25" or "mid-30s"), skinColor (string), potential nationality (string), characteristics (string, especially hair style/color NOT listed in hairstyle), clothing (string), clothingColor (string), mainAction (string), emotion (string), faceShape (string, e.g., 'oval', 'round'), lipShape (string, e.g., 'full', 'thin'), eyeShape (string, e.g., 'almond', 'round'), eyebrowShape (string, e.g., 'arched', 'straight'), noseShape (string, e.g., 'button', 'aquiline'), and hairstyle (string, e.g., 'ponytail', 'short crew cut'). If no characters are visible, return an empty array.
+        - location: (string) The specific location.
+        - time: (string) The time of day (e.g., Pagi, Siang, Sore, Malam).
+        - weather: (string) The weather conditions (e.g., Cerah, Berawan, Hujan).
+        - season: (string) The season (e.g., Musim Panas, Musim Dingin).
+        - cameraStyle: (string) The visual style (e.g., Realistis, Sinematik).
+        - cameraAngle: (string) The camera angle (e.g., Eye-level, Low-angle).
+        - focus: (string) The camera focus (e.g., Lebar, Medium).
+        - lighting: (string) The lighting conditions (e.g., Alami, Studio, Low-key).
+        - colorGrading: (string) The color grading/tone (e.g., Hangat, Dingin, Vibran).
+        Be as descriptive and accurate as possible.`;
+
+        const payload = {
+            contents: [{
+                role: "user",
+                parts: [
+                    { text: prompt },
+                    { inlineData: { mimeType: "image/jpeg", data: imageBase64 } }
+                ]
+            }]
+        };
+
+        try {
+            const apiKey = ""; // Provided by the environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Permintaan API gagal dengan status ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                let jsonText = result.candidates[0].content.parts[0].text;
+                jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
+                
+                try {
+                    const parsedJson = JSON.parse(jsonText);
+                    
+                    setMainDescription(parsedJson.mainDescription || '');
+                    if (parsedJson.characters && parsedJson.characters.length > 0) {
+                        setCharacters(parsedJson.characters.map((char, index) => ({
+                            id: Date.now() + index,
+                            name: '',
+                            gender: char.gender || '',
+                            age: char.age || '',
+                            skinColor: char.skinColor || '',
+                            nationality: char.nationality || '',
+                            style: '', 
+                            characteristics: char.characteristics || '',
+                            clothing: char.clothing || '',
+                            clothingColor: char.clothingColor || '',
+                            mainAction: char.mainAction || '',
+                            emotion: char.emotion || '',
+                            faceShape: char.faceShape || '',
+                            lipShape: char.lipShape || '',
+                            eyeShape: char.eyeShape || '',
+                            eyebrowShape: char.eyebrowShape || '',
+                            noseShape: char.noseShape || '',
+                            hairstyle: char.hairstyle || ''
+                        })));
+                    } else {
+                        setCharacters([initialCharacterState]);
+                    }
+                    setLocation(parsedJson.location || '');
+                    setTime(parsedJson.time || '');
+                    setWeather(parsedJson.weather || '');
+                    setSeason(parsedJson.season || '');
+                    setCameraStyle(parsedJson.cameraStyle || '');
+                    setCameraMovement(''); 
+                    setCameraAngle(parsedJson.cameraAngle || '');
+                    setFocus(parsedJson.focus || '');
+                    setLighting(parsedJson.lighting || '');
+                    setColorGrading(parsedJson.colorGrading || '');
+                    
+                    showMessage("Analisis gambar berhasil! Form telah diisi.", "success");
+                } catch (e) {
+                    console.error("Failed to parse JSON from API response:", e);
+                    console.error("Raw text from API:", jsonText);
+                    showMessage("Gagal memproses respons dari API. Format JSON tidak valid.", "error");
+                }
+            } else {
+                 console.error("Gemini API error:", result);
+                 throw new Error("Gagal mendapatkan data dari respons API.");
+            }
+        } catch (error) {
+            console.error("Error during image analysis:", error);
+            showMessage(`Terjadi kesalahan saat menganalisis gambar: ${error.message}`, "error");
+        } finally {
+            setIsAnalyzingImage(false);
+        }
+    };
+
+
+    // --- Local Template Management Functions ---
+    const handleSaveTemplate = () => {
+        if (!currentTemplateName.trim()) {
+            showMessage("Nama template tidak boleh kosong.", "error");
+            return;
+        }
+
+        const templateData = {
+            name: currentTemplateName.trim(),
+            mainDescription, characters, location, time, weather, season,
+            cameraStyle, cameraMovement, cameraAngle, focus, lighting, colorGrading,
+            dialogueType, dialogueEntries, soundMood, environmentalSound, backgroundMusic,
+            videoQuality, additionalDetails,
+        };
+
+        if (selectedTemplateId) {
+            // Update existing template
+            setTemplates(templates.map(t =>
+                t.id === selectedTemplateId ? { ...t, ...templateData } : t
+            ));
+            showMessage(`Template '${templateData.name}' berhasil diperbarui!`, "success");
+        } else {
+            // Save as new template
+            const newTemplate = { ...templateData, id: Date.now().toString() };
+            setTemplates([...templates, newTemplate]);
+            setSelectedTemplateId(newTemplate.id);
+            showMessage(`Template '${templateData.name}' berhasil disimpan!`, "success");
+        }
+    };
+    
+    const handleLoadTemplate = (templateId) => {
+        const template = templates.find(t => t.id === templateId);
+        if (!template) {
+            showMessage("Template tidak ditemukan.", "error");
+            return;
+        }
+
+        setMainDescription(template.mainDescription || '');
+        setCharacters(Array.isArray(template.characters) ? template.characters.map(c => ({...initialCharacterState, ...c})) : [initialCharacterState]);
+        setLocation(template.location || '');
+        setTime(template.time || '');
+        setWeather(template.weather || '');
+        setSeason(template.season || '');
+        setCameraStyle(template.cameraStyle || '');
+        setCameraMovement(template.cameraMovement || '');
+        setCameraAngle(template.cameraAngle || '');
+        setFocus(template.focus || '');
+        setLighting(template.lighting || '');
+        setColorGrading(template.colorGrading || '');
+        setDialogueType(template.dialogueType || '');
+        setDialogueEntries(Array.isArray(template.dialogueEntries) ? template.dialogueEntries : []);
+        setSoundMood(template.soundMood || '');
+        setEnvironmentalSound(template.environmentalSound || '');
+        setBackgroundMusic(template.backgroundMusic || '');
+        setVideoQuality(template.videoQuality || '');
+        setAdditionalDetails(template.additionalDetails || '');
+        
+        setCurrentTemplateName(template.name || '');
+        setSelectedTemplateId(template.id);
+        
+        showMessage(`Template '${template.name}' berhasil dimuat.`, "success");
+    };
+    
+    const handleDeleteTemplate = () => {
+        if (!selectedTemplateId) {
+            showMessage("Pilih template yang ingin dihapus terlebih dahulu.", "error");
+            return;
+        }
+        
+        // Using window.confirm as a simple confirmation without needing a full modal component
+        const isConfirmed = window.confirm(`Apakah Anda yakin ingin menghapus template '${currentTemplateName}'? Tindakan ini tidak dapat diurungkan.`);
+        if (!isConfirmed) return;
+
+        setTemplates(templates.filter(t => t.id !== selectedTemplateId));
+        showMessage(`Template '${currentTemplateName}' berhasil dihapus.`, "success");
+        clearForm(); // Clear form after deletion
+    };
+
+
+    // --- Core App Logic (Character, Dialogue, Prompt Gen) ---
+    const copyToClipboard = (text, lang) => {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showMessage(`${lang} prompt berhasil disalin!`, 'success');
+        } catch (err) {
+            showMessage(`Gagal menyalin ${lang} prompt.`, 'error');
+            console.error('Failed to copy text: ', err);
+        }
+        document.body.removeChild(textarea);
+    };
+
+    const handleCharacterChange = (id, field, value) => {
+        setCharacters(prev => prev.map(char => (char.id === id ? { ...char, [field]: value } : char)));
+    };
+
+    const addCharacter = () => {
+        const newId = characters.length > 0 ? Math.max(...characters.map(c => c.id)) + 1 : 1;
+        setCharacters(prev => [
+            ...prev,
+            { ...initialCharacterState, id: newId }
+        ]);
+    };
+
+    const removeCharacter = (id) => {
+        setCharacters(prev => prev.filter(char => char.id !== id));
+        setDialogueEntries(prev => prev.filter(entry => entry.characterId !== id));
+    };
+
+    const addDialogueEntry = () => {
+        const newId = dialogueEntries.length > 0 ? Math.max(...dialogueEntries.map(d => d.id)) + 1 : 1;
+        setDialogueEntries(prev => [
+            ...prev,
+            { id: newId, characterId: characters.length > 0 ? characters[0].id : null, text: '', language: '' }
+        ]);
+    };
+
+    const handleDialogueEntryChange = (id, field, value) => {
+        setDialogueEntries(prev => prev.map(entry => (entry.id === id ? { ...entry, [field]: value } : entry)));
+    };
+
+    const removeDialogueEntry = (id) => {
+        setDialogueEntries(prev => prev.filter(entry => entry.id !== id));
+    };
+
+    const generatePrompt = async () => {
+        setLoading(true);
+        setEnglishPrompt('');
+        setOpenAIPrompt('');
+        setIndonesianPrompt('');
+        setCharacterPrompt('');
+        setSuggestions('');
+    
+        const characterDetails = characters.map(char => {
+            let details = [];
+            if (char.gender) details.push(char.gender);
+            if (char.age) details.push(`usia ${char.age} tahun`);
+            if (char.skinColor) details.push(`dengan kulit berwarna ${char.skinColor}`);
+            if (char.nationality) details.push(char.nationality);
+            if (char.name) details.push(`bernama ${char.name}`);
+            if (char.clothing) details.push(`, mengenakan ${char.clothing}` + (char.clothingColor ? ` berwarna ${char.clothingColor}` : ''));
+            
+            let faceDetails = [];
+            if (char.faceShape) faceDetails.push(`bentuk wajah ${char.faceShape}`);
+            if (char.lipShape) faceDetails.push(`bentuk bibir ${char.lipShape}`);
+            if (char.eyeShape) faceDetails.push(`bentuk mata ${char.eyeShape}`);
+            if (char.eyebrowShape) faceDetails.push(`bentuk alis ${char.eyebrowShape}`);
+            if (char.noseShape) faceDetails.push(`bentuk hidung ${char.noseShape}`);
+            if (char.hairstyle) faceDetails.push(`gaya rambut ${char.hairstyle}`);
+            if(faceDetails.length > 0) details.push(`, dengan ${faceDetails.join(', ')}`);
+
+            if (char.characteristics) details.push(`, ${char.characteristics}`);
+            if (char.mainAction) details.push(`, terlihat sedang ${char.mainAction}`);
+            if (char.emotion) details.push(` dengan ekspresi ${char.emotion}`);
+            if (char.style) details.push(`. Dibuat dengan gaya ${char.style}`);
+            return details.join(' ');
+        }).join('; ');
+
+        setCharacterPrompt(characterDetails);
+
+        let rawEnglishPrompt = `${mainDescription}.`;
+
+        characters.forEach((char, index) => {
+            let charInfo = ` Character ${index + 1}:`;
+            let hasInfo = false;
+            if (char.name) { charInfo += ` Name: ${char.name}.`; hasInfo = true; }
+            if (char.gender) { charInfo += ` Gender: ${char.gender}.`; hasInfo = true; }
+            if (char.age) { charInfo += ` Age: ${char.age}.`; hasInfo = true; }
+            if (char.skinColor) { charInfo += ` Skin color: ${char.skinColor}.`; hasInfo = true; }
+            if (char.nationality) { charInfo += ` Nationality: ${char.nationality}.`; hasInfo = true; }
+            if (char.style) { charInfo += ` Style: ${char.style}.`; hasInfo = true; }
+            
+            let faceDetails = [];
+            if (char.faceShape) faceDetails.push(`face shape is ${char.faceShape}`);
+            if (char.lipShape) faceDetails.push(`lip shape is ${char.lipShape}`);
+            if (char.eyeShape) faceDetails.push(`eye shape is ${char.eyeShape}`);
+            if (char.eyebrowShape) faceDetails.push(`eyebrow shape is ${char.eyebrowShape}`);
+            if (char.noseShape) faceDetails.push(`nose shape is ${char.noseShape}`);
+            if (char.hairstyle) faceDetails.push(`hairstyle is ${char.hairstyle}`);
+            if(faceDetails.length > 0) { charInfo += ` Face details: ${faceDetails.join(', ')}.`; hasInfo = true; }
+
+            if (char.clothing) { charInfo += ` Clothing: ${char.clothing}.`; hasInfo = true; }
+            if (char.clothingColor) { charInfo += ` Clothing color: ${char.clothingColor}.`; hasInfo = true; }
+            if (char.characteristics) { charInfo += ` Other characteristics: ${char.characteristics}.`; hasInfo = true; }
+            if (char.mainAction) { charInfo += ` Main action: ${char.mainAction}.`; hasInfo = true; }
+            if (char.emotion) { charInfo += ` Emotion: ${char.emotion}.`; hasInfo = true; }
+            
+            if(hasInfo) rawEnglishPrompt += charInfo;
+        });
+        
+        if (location || time || weather || season) {
+          rawEnglishPrompt += ` Setting:`;
+          if (location) rawEnglishPrompt += ` Location - ${location}.`;
+          if (time) rawEnglishPrompt += ` Time - ${time}.`;
+          if (weather) rawEnglishPrompt += ` Weather - ${weather}.`;
+          if (season) rawEnglishPrompt += ` Season - ${season}.`;
+        }
+
+        if (cameraStyle || cameraMovement || cameraAngle || focus || lighting || colorGrading) {
+          rawEnglishPrompt += ` Camera:`;
+          if (cameraStyle) rawEnglishPrompt += ` Style - ${cameraStyle}.`;
+          if (cameraMovement) rawEnglishPrompt += ` Movement - ${cameraMovement}.`;
+          if (cameraAngle) rawEnglishPrompt += ` Angle - ${cameraAngle}.`;
+          if (focus) rawEnglishPrompt += ` Focus - ${focus}.`;
+          if (lighting) rawEnglishPrompt += ` Lighting - ${lighting}.`;
+          if (colorGrading) rawEnglishPrompt += ` Color Grading - ${colorGrading}.`;
+        }
+
+        if (dialogueType !== 'Tanpa dialog' && dialogueEntries.length > 0 && dialogueEntries.some(entry => entry.text.trim() !== '')) {
+          rawEnglishPrompt += ` Dialogue: ${dialogueType}.`;
+          const dialogues = dialogueEntries.map(entry => {
+            const speakingCharacter = characters.find(char => char.id === entry.characterId);
+            const characterName = speakingCharacter ? speakingCharacter.name || `Character ${speakingCharacter.id}` : 'Unknown Character';
+            if (entry.text.trim() !== '') {
+              return `${characterName}: "${entry.text}"` + (entry.language ? ` (Language: ${entry.language})` : '');
+            }
+            return '';
+          }).filter(Boolean).join('; ');
+          if (dialogues) {
+            rawEnglishPrompt += ` Character Dialogues: ${dialogues}.`;
+          }
+        }
+
+        if (soundMood || environmentalSound || backgroundMusic) {
+          rawEnglishPrompt += ` Overall Audio:`;
+          if (soundMood) rawEnglishPrompt += ` Sound Mood: ${soundMood}.`;
+          if (environmentalSound) rawEnglishPrompt += ` Environmental Sound: ${environmentalSound}.`;
+          if (backgroundMusic) rawEnglishPrompt += ` Background Music: ${backgroundMusic}.`;
+        }
+
+        if (videoQuality) rawEnglishPrompt += ` Video Quality: ${videoQuality}.`;
+        if (additionalDetails) rawEnglishPrompt += ` Additional Details: ${additionalDetails}.`;
+
+        try {
+          const apiKey = "AIzaSyCG9YcD8h3UFztR5LO3vbTcB7AeRGo9d2Y";
+          const generateContent = async (prompt, type) => {
+            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+            const payload = { contents: chatHistory };
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => 'Could not read error response.');
+                console.error(`API request failed with status ${response.status}:`, errorText);
+                showMessage(`Gagal menghubungi API. Status: ${response.status}`, 'error');
+                return null;
+            }
+
+            const responseText = await response.text();
+            if (!responseText) {
+                 console.error('API returned an empty response.');
+                 showMessage('API mengembalikan respons kosong.', 'error');
+                 return null;
+            }
+
+            try {
+                const result = JSON.parse(responseText);
+                if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                  return result.candidates[0].content.parts[0].text;
+                } else {
+                  console.error(`Gemini API error (${type}):`, result);
+                  const errorMessage = result.error?.message || `Gagal menghasilkan ${type}.`;
+                  showMessage(errorMessage, 'error');
+                  return null;
+                }
+            } catch (e) {
+                console.error('Failed to parse API response as JSON:', e);
+                console.error('Raw response from API:', responseText);
+                showMessage('Gagal memproses respons dari API.', 'error');
+                return null;
+            }
+          };
+
+          const optimizedEnglishPrompt = await generateContent(`Elaborate and optimize the following raw video prompt into a detailed and effective sentence for Veo3 video generation. Ensure all specified details are included and the overall prompt is coherent and visually descriptive. DO NOT alter any dialogue content.\n\nRaw Prompt:\n${rawEnglishPrompt}`, 'prompt Bahasa Inggris');
+          if (!optimizedEnglishPrompt) {
+              setLoading(false);
+              return;
+          }
+          setEnglishPrompt(optimizedEnglishPrompt);
+
+          const enhancedPromptRequest = `You are a prompt engineering expert. Review the following video prompt and enhance it using advanced techniques, referencing the style and detail often seen in high-quality prompts for OpenAI's generative models like Sora or DALL-E 3. Focus on adding evocative visual descriptions, specific artistic influences, and a more cinematic structure. Do not alter any dialogue content. Respond only with the new, enhanced prompt.\n\nOriginal Prompt:\n${optimizedEnglishPrompt}`;
+          const enhancedPrompt = await generateContent(enhancedPromptRequest, 'prompt referensi OpenAI');
+          if(enhancedPrompt) setOpenAIPrompt(enhancedPrompt);
+
+          const translatedIndonesianPrompt = await generateContent(`Translate the following English video generation prompt into Indonesian. The translation should be natural and suitable for a video generation tool like Veo3. DO NOT translate any dialogue content, keep it exactly as it is.\n\nEnglish Prompt:\n${optimizedEnglishPrompt}`, 'prompt Bahasa Indonesia');
+          if (translatedIndonesianPrompt) setIndonesianPrompt(translatedIndonesianPrompt);
+
+          const generatedSuggestions = await generateContent(`Based on the following video prompt, provide concise suggestions or additional prompt details that could make the video generated by Veo3 even better. Focus on creative enhancements, specific visual elements, or subtle nuances. Respond in Indonesian.\n\nPrompt:\n${optimizedEnglishPrompt}\n\nSuggestions:`, 'saran');
+          if (generatedSuggestions) setSuggestions(generatedSuggestions);
+
+        } catch (error) {
+          showMessage('Terjadi kesalahan saat menghubungi API Gemini.', 'error');
+          console.error('Error generating prompt:', error);
+        } finally {
+          setLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-200 p-4 sm:p-6 lg:p-8 font-sans flex flex-col items-center">
+            <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-4xl border border-gray-200">
+                <h1 className="text-3xl sm:text-4xl font-extrabold text-center text-purple-800 mb-2">
+                    Video Prompt Generator Veo 3
+                </h1>
+                <h2 className="text-sm sm:text-base text-center text-gray-600 mb-6">
+                    Versi Beta 1.6 oleh kyuren (dengan Detail Wajah)
+                </h2>
+                
+                <div className="mb-8 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <h2 className="text-xl font-bold text-indigo-700 mb-4">Manajemen Template (Lokal)</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                        <div className="flex flex-col">
+                            <label htmlFor="loadTemplate" className="block text-gray-700 text-sm font-semibold mb-2">Muat Template Tersimpan</label>
+                            <select 
+                                id="loadTemplate" 
+                                className="p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                value={selectedTemplateId}
+                                onChange={(e) => handleLoadTemplate(e.target.value)}
+                                disabled={!templates.length}
+                            >
+                                <option value="">Pilih template...</option>
+                                {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                            </select>
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="templateName" className="block text-gray-700 text-sm font-semibold mb-2">Nama Template Saat Ini</label>
+                            <input 
+                                type="text"
+                                id="templateName"
+                                className="p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="Contoh: Adegan Hutan Ajaib"
+                                value={currentTemplateName}
+                                onChange={(e) => setCurrentTemplateName(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                     <div className="mt-4 flex flex-wrap gap-2 justify-start">
+                        <button
+                             onClick={handleSaveTemplate}
+                             className={`py-2 px-4 rounded-lg font-semibold text-white transition duration-200 ${selectedTemplateId ? 'bg-orange-500 hover:bg-orange-600' : 'bg-green-600 hover:bg-green-700'}`}
+                             disabled={!currentTemplateName.trim()}
+                        >
+                            {selectedTemplateId ? 'Perbarui Template Saat Ini' : 'Simpan sebagai Template Baru'}
+                        </button>
+                        <button
+                             onClick={handleDeleteTemplate}
+                             className="py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition duration-200"
+                             disabled={!selectedTemplateId}
+                        >
+                             Hapus Template
+                        </button>
+                         <button
+                             onClick={clearForm}
+                             className="py-2 px-4 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition duration-200"
+                        >
+                             Mulai Template Baru (Bersihkan Form)
+                        </button>
+                    </div>
+                </div>
+
+                <div className="mb-8 p-4 bg-cyan-50 rounded-lg border border-cyan-200">
+                    <h2 className="text-xl font-bold text-cyan-700 mb-4">Konversi Gambar ke Data</h2>
+                    <p className="text-gray-600 mb-4 text-sm">Unggah gambar untuk mengisi form secara otomatis menggunakan AI.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                        <div className="flex flex-col">
+                             <label htmlFor="imageUpload" className="block text-gray-700 text-sm font-semibold mb-2">Pilih File Gambar</label>
+                             <input 
+                                type="file" 
+                                id="imageUpload" 
+                                accept="image/*" 
+                                onChange={handleImageSelect}
+                                className="block w-full text-sm text-slate-500
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-full file:border-0
+                                file:text-sm file:font-semibold
+                                file:bg-cyan-100 file:text-cyan-700
+                                hover:file:bg-cyan-200"
+                             />
+                             <button
+                                onClick={handleImageAnalysis}
+                                disabled={!imageBase64 || isAnalyzingImage}
+                                className="mt-4 w-full py-2 px-4 rounded-lg font-semibold text-white transition duration-300 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                             >
+                                {isAnalyzingImage ? (
+                                    <>
+                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Menganalisis...
+                                    </>
+                                ) : 'Proses Gambar & Isi Form'}
+                             </button>
+                        </div>
+                        <div className="flex justify-center items-center">
+                            {imagePreview ? (
+                                <img src={imagePreview} alt="Pratinjau Gambar" className="max-h-48 rounded-lg shadow-md border border-gray-200" />
+                            ) : (
+                                <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center text-gray-500 border-2 border-dashed">
+                                    Pratinjau Gambar
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mb-8 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <h2 className="text-xl font-bold text-purple-700 mb-4">Deskripsi Video Utama</h2>
+                    <div className="flex flex-col">
+                        <label htmlFor="mainDescription" className="block text-gray-700 text-sm font-semibold mb-2">
+                            Deskripsi <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            id="mainDescription"
+                            className="p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-200 h-24 resize-y"
+                            placeholder="Contoh: Kucing bermain dengan bola benang di ruang tamu yang nyaman."
+                            value={mainDescription}
+                            onChange={(e) => setMainDescription(e.target.value)}
+                            required
+                        ></textarea>
+                    </div>
+                </div>
+
+                <div className="mb-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h2 className="text-xl font-bold text-blue-700 mb-4">Detail Subjek</h2>
+                    {characters.map((char, index) => (
+                        <div key={char.id} className="mb-6 p-4 border border-blue-100 rounded-lg bg-blue-25 relative">
+                            <h3 className="text-lg font-semibold text-blue-600 mb-4">Karakter {index + 1}</h3>
+                            {characters.length > 1 && (
+                                <button
+                                    onClick={() => removeCharacter(char.id)}
+                                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold"
+                                    title="Hapus Karakter"
+                                >
+                                    &times;
+                                </button>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="flex flex-col">
+                                    <label htmlFor={`characterName-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Nama</label>
+                                    <input type="text" id={`characterName-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Alice" value={char.name} onChange={(e) => handleCharacterChange(char.id, 'name', e.target.value)} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label htmlFor={`characterGender-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Jenis Kelamin</label>
+                                    <select id={`characterGender-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" value={char.gender} onChange={(e) => handleCharacterChange(char.id, 'gender', e.target.value)}>
+                                        <option value="">Pilih</option>
+                                        {genderOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                                    </select>
+                                </div>
+                                <div className="flex flex-col">
+                                    <label htmlFor={`characterAge-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Usia</label>
+                                    <input type="text" id={`characterAge-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: 25" value={char.age} onChange={(e) => handleCharacterChange(char.id, 'age', e.target.value)} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label htmlFor={`characterSkinColor-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Warna Kulit</label>
+                                    <input type="text" id={`characterSkinColor-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Sawo matang" value={char.skinColor} onChange={(e) => handleCharacterChange(char.id, 'skinColor', e.target.value)} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <label htmlFor={`characterNationality-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Kewarganegaraan</label>
+                                  <input type="text" id={`characterNationality-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Jepang" value={char.nationality} onChange={(e) => handleCharacterChange(char.id, 'nationality', e.target.value)} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label htmlFor={`characterStyle-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Style/Gaya Gambar</label>
+                                    <select id={`characterStyle-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" value={char.style} onChange={(e) => handleCharacterChange(char.id, 'style', e.target.value)}>
+                                        <option value="">Pilih Gaya</option>
+                                        {styleOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                                    </select>
+                                </div>
+                                <div className="flex flex-col">
+                                    <label htmlFor={`characterClothing-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Pakaian</label>
+                                    <input type="text" id={`characterClothing-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Kemeja" value={char.clothing} onChange={(e) => handleCharacterChange(char.id, 'clothing', e.target.value)} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <label htmlFor={`characterClothingColor-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Warna Pakaian</label>
+                                     <input type="text" id={`characterClothingColor-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Merah" value={char.clothingColor} onChange={(e) => handleCharacterChange(char.id, 'clothingColor', e.target.value)} />
+                                </div>
+                                <div className="flex flex-col lg:col-span-4">
+                                  <label htmlFor={`characterCharacteristics-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Karakteristik Tambahan</label>
+                                  <input type="text" id={`characterCharacteristics-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Tinggi, memakai kacamata" value={char.characteristics} onChange={(e) => handleCharacterChange(char.id, 'characteristics', e.target.value)} />
+                                </div>
+                            </div>
+                            
+                            <div className="mt-6 p-4 bg-blue-100 rounded-lg border border-blue-200">
+                                <h4 className="text-md font-semibold text-blue-700 mb-3">Detail Wajah</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                     <div className="flex flex-col">
+                                        <label htmlFor={`faceShape-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Bentuk Wajah</label>
+                                        <input type="text" id={`faceShape-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Oval" value={char.faceShape} onChange={(e) => handleCharacterChange(char.id, 'faceShape', e.target.value)} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label htmlFor={`lipShape-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Bentuk Bibir</label>
+                                        <input type="text" id={`lipShape-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Penuh" value={char.lipShape} onChange={(e) => handleCharacterChange(char.id, 'lipShape', e.target.value)} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label htmlFor={`eyeShape-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Bentuk Mata</label>
+                                        <input type="text" id={`eyeShape-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Almond" value={char.eyeShape} onChange={(e) => handleCharacterChange(char.id, 'eyeShape', e.target.value)} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label htmlFor={`eyebrowShape-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Bentuk Alis</label>
+                                        <input type="text" id={`eyebrowShape-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Melengkung" value={char.eyebrowShape} onChange={(e) => handleCharacterChange(char.id, 'eyebrowShape', e.target.value)} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label htmlFor={`noseShape-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Bentuk Hidung</label>
+                                        <input type="text" id={`noseShape-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Mancung" value={char.noseShape} onChange={(e) => handleCharacterChange(char.id, 'noseShape', e.target.value)} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <label htmlFor={`hairstyle-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Gaya Rambut</label>
+                                        <input type="text" id={`hairstyle-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Kuncir kuda" value={char.hairstyle} onChange={(e) => handleCharacterChange(char.id, 'hairstyle', e.target.value)} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                                <div className="flex flex-col">
+                                  <label htmlFor={`characterMainAction-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Aksi Utama</label>
+                                  <input type="text" id={`characterMainAction-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Berlari di taman" value={char.mainAction} onChange={(e) => handleCharacterChange(char.id, 'mainAction', e.target.value)} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <label htmlFor={`characterEmotion-${char.id}`} className="block text-gray-700 text-sm font-semibold mb-2">Emosi</label>
+                                  <input type="text" id={`characterEmotion-${char.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Contoh: Senang, cemas" value={char.emotion} onChange={(e) => handleCharacterChange(char.id, 'emotion', e.target.value)} />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    <button onClick={addCharacter} className="mt-4 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition duration-200 flex items-center justify-center">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Tambah Karakter Baru
+                    </button>
+                </div>
+
+                <div className="mb-8 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <h2 className="text-xl font-bold text-green-700 mb-4">Latar</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex flex-col">
+                            <label htmlFor="location" className="block text-gray-700 text-sm font-semibold mb-2">Lokasi</label>
+                            <input type="text" id="location" className="p-3 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500" placeholder="Contoh: Kafe vintage di Paris" value={location} onChange={(e) => setLocation(e.target.value)} />
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="time" className="block text-gray-700 text-sm font-semibold mb-2">Waktu</label>
+                             <input type="text" id="time" className="p-3 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500" placeholder="Contoh: Sore hari" value={time} onChange={(e) => setTime(e.target.value)} />
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="weather" className="block text-gray-700 text-sm font-semibold mb-2">Cuaca</label>
+                             <input type="text" id="weather" className="p-3 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500" placeholder="Contoh: Cerah" value={weather} onChange={(e) => setWeather(e.target.value)} />
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="season" className="block text-gray-700 text-sm font-semibold mb-2">Musim</label>
+                             <input type="text" id="season" className="p-3 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500" placeholder="Contoh: Musim panas" value={season} onChange={(e) => setSeason(e.target.value)} />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mb-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <h2 className="text-xl font-bold text-yellow-700 mb-4">Kamera</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex flex-col">
+                            <label htmlFor="cameraStyle" className="block text-gray-700 text-sm font-semibold mb-2">Gaya</label>
+                            <input type="text" id="cameraStyle" className="p-3 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" placeholder="Contoh: Sinematik" value={cameraStyle} onChange={(e) => setCameraStyle(e.target.value)} />
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="cameraMovement" className="block text-gray-700 text-sm font-semibold mb-2">Pergerakan Kamera</label>
+                            <select id="cameraMovement" className="p-3 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" value={cameraMovement} onChange={(e) => setCameraMovement(e.target.value)}>
+                                <option value="">Pilih Pergerakan</option>
+                                {cameraMovementOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                            </select>
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="cameraAngle" className="block text-gray-700 text-sm font-semibold mb-2">Sudut Kamera</label>
+                             <input type="text" id="cameraAngle" className="p-3 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" placeholder="Contoh: Eye-level" value={cameraAngle} onChange={(e) => setCameraAngle(e.target.value)} />
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="focus" className="block text-gray-700 text-sm font-semibold mb-2">Fokus</label>
+                             <input type="text" id="focus" className="p-3 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" placeholder="Contoh: Medium" value={focus} onChange={(e) => setFocus(e.target.value)} />
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="lighting" className="block text-gray-700 text-sm font-semibold mb-2">Pencahayaan</label>
+                            <input type="text" id="lighting" className="p-3 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" placeholder="Contoh: Cahaya alami" value={lighting} onChange={(e) => setLighting(e.target.value)} />
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="colorGrading" className="block text-gray-700 text-sm font-semibold mb-2">Gradasi Warna</label>
+                            <input type="text" id="colorGrading" className="p-3 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500" placeholder="Contoh: Hangat" value={colorGrading} onChange={(e) => setColorGrading(e.target.value)} />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mb-8 p-4 bg-red-50 rounded-lg border border-red-200">
+                    <h2 className="text-xl font-bold text-red-700 mb-4">Audio Karakter</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex flex-col md:col-span-2">
+                            <label htmlFor="dialogueType" className="block text-gray-700 text-sm font-semibold mb-2">Jenis Dialog</label>
+                            <select id="dialogueType" className="p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" value={dialogueType} onChange={(e) => setDialogueType(e.target.value)}>
+                                <option value="">Pilih Jenis Dialog</option>
+                                {dialogueTypeOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                            </select>
+                        </div>
+                        {dialogueType !== 'Tanpa dialog' && dialogueType !== '' && (
+                            <>
+                                {dialogueEntries.map((entry, index) => (
+                                    <div key={entry.id} className="flex flex-col md:col-span-2 mb-4 p-3 border border-red-100 rounded-lg bg-red-25 relative">
+                                        <h4 className="text-md font-semibold text-red-600 mb-2">Baris Dialog {index + 1}</h4>
+                                        {dialogueEntries.length > 0 && (
+                                            <button onClick={() => removeDialogueEntry(entry.id)} className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold" title="Hapus Baris Dialog" >&times;</button>
+                                        )}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="flex flex-col">
+                                                <label htmlFor={`dialogueCharacter-${entry.id}`} className="block text-gray-700 text-sm font-semibold mb-1">Karakter</label>
+                                                <select id={`dialogueCharacter-${entry.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" value={entry.characterId || ''} onChange={(e) => handleDialogueEntryChange(entry.id, 'characterId', parseInt(e.target.value))}>
+                                                    <option value="">Pilih Karakter</option>
+                                                    {characters.map(char => (<option key={char.id} value={char.id}>{char.name || `Karakter ${char.id}`}</option>))}
+                                                </select>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <label htmlFor={`dialogueLanguage-${entry.id}`} className="block text-gray-700 text-sm font-semibold mb-1">Bahasa</label>
+                                                <select id={`dialogueLanguage-${entry.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" value={entry.language || ''} onChange={(e) => handleDialogueEntryChange(entry.id, 'language', e.target.value)}>
+                                                    <option value="">Pilih Bahasa</option>
+                                                    {spokenLanguageOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="flex flex-col md:col-span-2">
+                                                <label htmlFor={`dialogueContent-${entry.id}`} className="block text-gray-700 text-sm font-semibold mb-1">Isi Dialog</label>
+                                                <textarea id={`dialogueContent-${entry.id}`} className="p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 h-20 resize-y" placeholder="Contoh: 'Halo, apa kabar?'" value={entry.text} onChange={(e) => handleDialogueEntryChange(entry.id, 'text', e.target.value)}></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="md:col-span-2">
+                                    <button onClick={addDialogueEntry} className="mt-2 py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition duration-200 flex items-center justify-center">
+                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                        Tambah Baris Dialog
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+                <div className="mb-8 p-4 bg-red-50 rounded-lg border border-red-200">
+                    <h2 className="text-xl font-bold text-red-700 mb-4">Suara Lingkungan dan Musik Latar</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex flex-col">
+                            <label htmlFor="soundMood" className="block text-gray-700 text-sm font-semibold mb-2">Mood Suara Keseluruhan</label>
+                            <select id="soundMood" className="p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" value={soundMood} onChange={(e) => setSoundMood(e.target.value)}>
+                                <option value="">Pilih Mood Suara</option>
+                                {soundMoodOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                            </select>
+                        </div>
+                        <div className="flex flex-col">
+                            <label htmlFor="environmentalSound" className="block text-gray-700 text-sm font-semibold mb-2">Suara Lingkungan</label>
+                            <input type="text" id="environmentalSound" className="p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" placeholder="Contoh: Suara ombak, kicauan burung" value={environmentalSound} onChange={(e) => setEnvironmentalSound(e.target.value)} />
+                        </div>
+                        <div className="flex flex-col md:col-span-2">
+                            <label htmlFor="backgroundMusic" className="block text-gray-700 text-sm font-semibold mb-2">Musik Latar</label>
+                            <input type="text" id="backgroundMusic" className="p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" placeholder="Contoh: Musik orkestra epik, melodi piano lembut" value={backgroundMusic} onChange={(e) => setBackgroundMusic(e.target.value)} />
+                        </div>
+                    </div>
+                </div>
+                <div className="mb-8 p-4 bg-teal-50 rounded-lg border border-teal-200">
+                    <h2 className="text-xl font-bold text-teal-700 mb-4">Kualitas Video</h2>
+                    <div className="flex flex-col">
+                        <label htmlFor="videoQuality" className="block text-gray-700 text-sm font-semibold mb-2">Kualitas Video</label>
+                        <input type="text" id="videoQuality" className="p-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="Contoh: 4K, HD, Realistis, Jernih" value={videoQuality} onChange={(e) => setVideoQuality(e.target.value)} />
+                    </div>
+                </div>
+                <div className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h2 className="text-xl font-bold text-gray-700 mb-4">Detail Tambahan</h2>
+                    <div className="flex flex-col">
+                        <label htmlFor="additionalDetails" className="block text-gray-700 text-sm font-semibold mb-2">Detail Lain</label>
+                        <textarea id="additionalDetails" className="p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-200 h-24 resize-y" placeholder="Tambahkan detail lain yang relevan di sini, seperti gaya visual spesifik, elemen unik, dll." value={additionalDetails} onChange={(e) => setAdditionalDetails(e.target.value)}></textarea>
+                    </div>
+                </div>
+
+
+                <button
+                    onClick={generatePrompt}
+                    className={`w-full py-3 px-6 rounded-lg font-bold text-white transition duration-300 ease-in-out transform hover:scale-105 ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 shadow-lg'}`}
+                    disabled={loading || !mainDescription}
+                >
+                    {loading ? 'Menghasilkan...' : 'Hasilkan Prompt'}
+                </button>
+                
+                {(characterPrompt || englishPrompt || indonesianPrompt || suggestions) && (
+                    <div className="mt-8 p-6 bg-purple-50 rounded-xl border border-purple-200 shadow-inner">
+                        <h2 className="text-2xl font-bold text-purple-800 mb-4">Hasil Prompt Siap Pakai:</h2>
+                        {characterPrompt && (
+                            <div className="mb-6 p-4 bg-blue-100 rounded-lg border border-blue-200">
+                                <h3 className="text-xl font-semibold text-blue-800 mb-2">Hasil Prompt Karakter</h3>
+                                <div className="relative"><textarea readOnly className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-800 resize-y h-24" value={characterPrompt}></textarea><button onClick={() => copyToClipboard(characterPrompt, 'Prompt Karakter')} className="absolute top-2 right-2 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-md text-sm transition duration-200" title="Salin Prompt Karakter">Salin</button></div>
+                            </div>
+                        )}
+                        {openAIPrompt && (
+                            <div className="mb-6 p-4 bg-teal-100 rounded-lg border border-teal-200">
+                                <h3 className="text-xl font-semibold text-teal-800 mb-2">Prompt Referensi OpenAI (English)</h3>
+                                <div className="relative"><textarea readOnly className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-800 resize-y h-32" value={openAIPrompt}></textarea><button onClick={() => copyToClipboard(openAIPrompt, 'Prompt Referensi OpenAI')} className="absolute top-2 right-2 bg-teal-500 hover:bg-teal-600 text-white p-2 rounded-md text-sm transition duration-200" title="Salin Prompt Referensi OpenAI">Salin</button></div>
+                            </div>
+                        )}
+                        {indonesianPrompt && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2">Prompt Video (Bahasa Indonesia)</h3>
+                                <div className="relative"><textarea readOnly className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-800 resize-y h-32" value={indonesianPrompt}></textarea><button onClick={() => copyToClipboard(indonesianPrompt, 'Bahasa Indonesia')} className="absolute top-2 right-2 bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-md text-sm transition duration-200" title="Salin Prompt Bahasa Indonesia">Salin</button></div>
+                            </div>
+                        )}
+                        {englishPrompt && (
+                            <div className="mb-6">
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2">Prompt Video (English)</h3>
+                                <div className="relative"><textarea readOnly className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-800 resize-y h-32" value={englishPrompt}></textarea><button onClick={() => copyToClipboard(englishPrompt, 'English')} className="absolute top-2 right-2 bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-md text-sm transition duration-200" title="Copy English Prompt">Salin</button></div>
+                            </div>
+                        )}
+                        {suggestions && (
+                            <div>
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2 flex items-center"><svg className="w-5 h-5 mr-2 text-orange-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9.293 11.293a1 1 0 001.414 0L12 9.414l1.293 1.293a1 1 0 001.414-1.414l-2-2a1 1 0 00-1.414 0l-2 2a1 1 0 000 1.414z" clipRule="evenodd"></path></svg>Saran & Detail Tambahan untuk Veo3</h3>
+                                <div className="relative"><textarea readOnly className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-800 resize-y h-48" value={suggestions}></textarea><button onClick={() => copyToClipboard(suggestions, 'Saran')} className="absolute top-2 right-2 bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-md text-sm transition duration-200" title="Salin Saran">Salin</button></div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+            </div>
+            <MessageBox message={message} type={messageType} onClose={() => setMessage('')} />
+        </div>
+    );
+};
+
+export default App;
